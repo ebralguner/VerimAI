@@ -69,4 +69,76 @@ amaçlanmıştır.
 ## Proje Sahibi
 
 **Ebral Güner**  
+
+
+# VerimAI
+
+## AI-Powered Productivity and Anomaly Analysis System
+
+VerimAI is an artificial intelligence-based analysis platform designed to help businesses make faster, more accurate, and data-driven decisions by analyzing production, sales, profitability, and operational processes.
+
+With this system, users can:
+
+- Predict production performance
+- Analyze sales data
+- Calculate profitability
+- Compare sales channels
+- Detect anomalies
+- Create scenario analyses
+
+---
+
+## Project Purpose
+
+The main purpose of this project is to collect scattered business data into a single intelligent dashboard in order to:
+
+- increase productivity,
+- accelerate decision-making processes,
+- simplify cost analysis,
+- and detect risks at an early stage.
+
+---
+
+## System Features
+
+- Production Forecasting
+- Sales Forecasting
+- Profit Analysis
+- Channel Analysis
+- Anomaly Detection
+- Scenario Simulation
+- Smart Recommendation System
+- Dashboard Panel
+
+---
+
+## Technologies Used
+
+- Python
+- Flask
+- Scikit-learn
+- Pandas
+- NumPy
+- HTML
+- CSS
+- JavaScript
+- Chart.js
+
+---
+
+## AI Models Used
+
+| Model | Purpose |
+|---|---|
+| Linear Regression | Production and sales prediction |
+| Random Forest | Advanced forecasting |
+| Isolation Forest | Anomaly detection |
+| Decision Tree | Decision support mechanism |
+
+---
+
+## Project Owner
+
+**Ebral Güner**  
+
  
