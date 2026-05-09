@@ -921,14 +921,4 @@ def ml_info():
 
 
 if __name__ == "__main__":
-    print("=" * 68)
-    print("  E-Ticaret Analiz Sistemi v9.0  (Pro ML)")
-    print("  Satış: LR vs RF auto-select | IF Anomali | DT Öneri+proba")
-    print("  /api/sales-ci      → Güven Aralıklı Satış Tahmini")
-    print("  /api/impact        → Etki Analizi")
-    print("  /api/recommendation → Karar Destek")
-    print("  /api/dashboard     → Tam Pipeline")
-    print("  /api/ml-info       → ML Metadata + Explainability")
-    print("  http://localhost:5000")
-    print("=" * 68)
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000)
