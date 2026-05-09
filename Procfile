@@ -1,0 +1,1 @@
+web: gunicorn uygulama:app
