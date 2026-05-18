@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VerimAI · E-Ticaret Analiz Sistemi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon-shell">
+        <img id="logoIcon"
+             src="{{ url_for('static', filename='assets/logo-icon.png') }}"
+             alt="VerimAI Logo"
+             class="logo-icon-img">
+      </div>
+      <div>
+        <div class="logo-text">E-Ticaret <span>Analiz</span> Sistemi</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Temayı değiştir" title="Temayı değiştir">
+        <span class="theme-toggle-icon" aria-hidden="true">◐</span>
+        <span class="theme-toggle-text">Tema</span>
+      </button>
+      <div class="header-badge">v9.1 · Render Production · Flask + scikit-learn</div>
+    </div>
+  </header>
+
+  <!-- ── Mod Çubuğu ── -->
+  <div class="mode-bar">
+    <div class="mode-bar-inner">
+      <span id="modeLabel" class="mode-label">⚙ Gerçek Mod Aktif</span>
+      <div class="mode-toggle-group">
+        <button id="modeBtnDemo" class="mode-btn" onclick="activateDemoMode()">
+          🎭 Demo Mod
+        </button>
+        <button id="btnNextScenario" class="mode-btn mode-btn-next" onclick="nextDemoScenario()" style="display:none;">
+          ⏭ Sonraki Senaryo
+        </button>
+        <button id="modeBtnReal" class="mode-btn mode-active" onclick="activateRealMode()">
+          ⚙ Gerçek Mod
+        </button>
+      </div>
+      <span class="mode-hint">Demo: 4 farklı senaryo · Gerçek: manuel giriş · Dashboard tek tıkla çalışır</span>
+    </div>
+  </div>
+
+  <!-- ── Pipeline Göstergesi ── -->
+  <div class="pipeline-bar">
+    <div class="pipeline-step active" id="pStep1">
+      <span class="ps-num">①</span><span class="ps-label">Girdi</span>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" id="pStep2">
+      <span class="ps-num">②</span><span class="ps-label">Üretim</span>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" id="pStep3">
+      <span class="ps-num">③</span><span class="ps-label">Satış</span>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" id="pStep4">
+      <span class="ps-num">④</span><span class="ps-label">Kar</span>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" id="pStep5">
+      <span class="ps-num">⑤</span><span class="ps-label">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- ── Ana İçerik ── -->
+  <main class="container">
+
+    <div class="page-hero">
+      <div class="hero-logo-wrap">
+        <img src="{{ url_for('static', filename='assets/logo-main.png') }}"
+             alt="VerimAI"
+             class="hero-logo-img">
+      </div>
+      <h1>Verimlilik ve <span class="highlight">Anomali Analizi</span></h1>
+      <p>Makine öğrenmesi destekli karar destek sistemi. Tek veri akışı ile üretim, satış ve kar tahminleri.</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 1 — ORTAK GİRDİLER                         -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="section-title">① Temel Parametreler · Tüm Modüller Bu Veriden Beslenir</div>
+
+    <div class="shared-inputs-card card">
+      <div class="card-header">
+        <div class="card-icon blue">⚙️</div>
+        <div>
+          <div class="card-title">Ortak Girdi Parametreleri</div>
+          <div class="card-subtitle">Bu değerler tüm modüllere otomatik olarak aktarılır</div>
+        </div>
+        <div class="pipeline-tag">PIPELINE KAYNAGI</div>
+      </div>
+
+      <div class="shared-grid">
+        <div class="form-group">
+          <label>👥 Çalışan Sayısı</label>
+          <input type="number" id="workers" class="form-control" placeholder="Örn: 15" min="1">
+        </div>
+        <div class="form-group">
+          <label>⏱ Çalışma Süresi (saat/gün)</label>
+          <input type="number" id="hours" class="form-control" placeholder="Örn: 8" min="1" max="24">
+        </div>
+        <div class="form-group">
+          <label>⚡ Enerji Tüketimi (kWh)</label>
+          <input type="number" id="energy" class="form-control" placeholder="Örn: 500" min="0">
+        </div>
+        <div class="form-group">
+          <label>💰 Ürün Fiyatı (₺)</label>
+          <input type="number" id="price" class="form-control" placeholder="Örn: 120" min="0">
+        </div>
+        <div class="form-group">
+          <label>📱 Satış Kanalı</label>
+          <select id="channel" class="form-control">
+            <option value="web">🌐 Web</option>
+            <option value="app">📱 App</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>👤 Çalışan Maliyeti (₺/ay)</label>
+          <input type="number" id="workerCost" class="form-control" placeholder="Örn: 8000" min="0">
+        </div>
+        <div class="form-group">
+          <label>🔌 Enerji Maliyeti (₺/kWh)</label>
+          <input type="number" id="energyCost" class="form-control" placeholder="Örn: 2.5" min="0" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>📱 App Satış (adet)</label>
+          <input type="number" id="appSales" class="form-control" placeholder="Örn: 120">
+        </div>
+        <div class="form-group">
+          <label>🌐 Web Satış (adet)</label>
+          <input type="number" id="webSales" class="form-control" placeholder="Örn: 80">
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 2 — MODÜL KARTLARI                          -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="section-title" style="margin-top:32px;">② Analiz Modülleri · Pipeline Akışı</div>
+
+    <div class="input-grid">
+
+      <!-- MODÜL 1: ÜRETİM -->
+      <div class="card pipeline-card">
+        <div class="card-header">
+          <div class="card-icon blue">🏭</div>
+          <div>
+            <div class="card-title">1. Üretim Tahmini</div>
+            <div class="card-subtitle">Deterministik · workers × hours × energy</div>
+          </div>
+        </div>
+        <div class="pipeline-info-row">
+          <span class="pi-chip blue">workers</span>
+          <span class="pi-chip blue">hours</span>
+          <span class="pi-chip blue">energy</span>
+          <span class="pi-arrow">→ üretim</span>
+        </div>
+        <button id="btnProduction" class="btn btn-primary" onclick="calculateProduction()">
+          <div class="spinner"></div>
+          <span class="btn-text">🏭 Üretimi Tahmin Et</span>
+        </button>
+        <div id="resultProductionCard" style="display:none; margin-top:14px; padding:14px; background:var(--bg-input); border-radius:var(--radius); border:1px solid var(--blue-dim);">
+          <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">TAHMİNİ ÜRETİM</div>
+          <div id="resultProduction" class="metric-value blue" style="font-size:22px;"></div>
+          <div class="metric-unit">birim</div>
+        </div>
+        <div id="pipelineProdBadge" class="pipeline-badge" style="display:none;"></div>
+      </div>
+
+      <!-- MODÜL 2: SATIŞ -->
+      <div class="card pipeline-card">
+        <div class="card-header">
+          <div class="card-icon purple">🛒</div>
+          <div>
+            <div class="card-title">2. Satış Tahmini</div>
+            <div class="card-subtitle">ML (LR / RF auto) · üretimden otomatik beslenir</div>
+          </div>
+        </div>
+        <div class="pipeline-info-row">
+          <span class="pi-chip green">↑ üretim (oto)</span>
+          <span class="pi-chip blue">price</span>
+          <span class="pi-chip blue">channel</span>
+          <span class="pi-arrow">→ satış</span>
+        </div>
+        <div class="form-group">
+          <label>Üretim Miktarı <span class="auto-tag">Modül 1'den otomatik</span></label>
+          <input type="number" id="productionInput" class="form-control auto-input" placeholder="Üretim hesaplayın veya girin">
+        </div>
+        <button id="btnSales" class="btn btn-primary" onclick="calculateSales()">
+          <div class="spinner"></div>
+          <span class="btn-text">🛒 Satışı Tahmin Et</span>
+        </button>
+        <div id="resultSalesCard" style="display:none; margin-top:14px; padding:14px; background:var(--bg-input); border-radius:var(--radius); border:1px solid rgba(163,113,247,0.3);">
+          <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">TAHMİNİ SATIŞ</div>
+          <div id="resultSales" class="metric-value purple" style="font-size:22px;"></div>
+          <div class="metric-unit">adet</div>
+        </div>
+        <div id="pipelineSalesBadge" class="pipeline-badge" style="display:none;"></div>
+      </div>
+
+      <!-- MODÜL 3: KAR -->
+      <div class="card pipeline-card">
+        <div class="card-header">
+          <div class="card-icon green">💰</div>
+          <div>
+            <div class="card-title">3. Kar Analizi</div>
+            <div class="card-subtitle">Gelir − Maliyet · pipeline değerleri kullanılır</div>
+          </div>
+        </div>
+        <div class="pipeline-info-row">
+          <span class="pi-chip green">↑ satış (oto)</span>
+          <span class="pi-chip green">↑ price (oto)</span>
+          <span class="pi-chip green">↑ maliyet (oto)</span>
+          <span class="pi-arrow">→ kar</span>
+        </div>
+        <div class="pipeline-notice">
+          Satış, fiyat ve maliyet değerleri üstteki ortak parametrelerden otomatik alınır.
+          İsterseniz satış miktarını manuel girin:
+        </div>
+        <div class="form-group">
+          <label>Satış Miktarı <span class="auto-tag">Pipeline veya manuel</span></label>
+          <input type="number" id="salesInput" class="form-control auto-input" placeholder="Boş bırakırsanız Modül 2'den alınır">
+        </div>
+        <button id="btnProfit" class="btn btn-primary" onclick="calculateProfit()">
+          <div class="spinner"></div>
+          <span class="btn-text">💰 Karı Hesapla</span>
+        </button>
+        <div id="resultProfitCard" style="display:none; margin-top:14px; padding:14px; background:var(--bg-input); border-radius:var(--radius); border:1px solid var(--border);">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">GELİR</div>
+              <div id="resultRevenue" style="font-size:13px; color:var(--green); font-family:monospace;"></div>
+            </div>
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">MALİYET</div>
+              <div id="resultCost" style="font-size:13px; color:var(--red); font-family:monospace;"></div>
+            </div>
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">NET KAR</div>
+              <div id="resultProfit" class="metric-value green" style="font-size:16px;"></div>
+            </div>
+          </div>
+          <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); text-align:center;">
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">KAR ORANI</div>
+            <div id="resultProfitRate" style="font-size:20px; font-family:'JetBrains Mono',monospace; font-weight:600;"></div>
+          </div>
+          <!-- scMargin: senaryo modülünde referans edilir -->
+          <div id="scMargin" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- MODÜL 4: KANAL -->
+      <div class="card pipeline-card">
+        <div class="card-header">
+          <div class="card-icon yellow">📱</div>
+          <div>
+            <div class="card-title">4. Kanal Analizi</div>
+            <div class="card-subtitle">App vs Web · appSales / webSales kullanılır</div>
+          </div>
+        </div>
+        <div class="pipeline-info-row">
+          <span class="pi-chip yellow">appSales</span>
+          <span class="pi-chip yellow">webSales</span>
+          <span class="pi-arrow">→ kanal</span>
+        </div>
+        <button id="btnChannel" class="btn btn-primary" onclick="calculateChannel()">
+          <div class="spinner"></div>
+          <span class="btn-text">📱 Kanalı Analiz Et</span>
+        </button>
+        <div id="resultChannelCard" style="display:none; margin-top:14px;">
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">KANAL KARŞILAŞTIRMASI</div>
+          <div id="channelBetterLabel" style="font-size:15px; font-weight:700; color:var(--blue); margin-bottom:10px;"></div>
+          <div class="channel-bar-wrap">
+            <div class="channel-labels">
+              <span id="appPct">App</span>
+              <span id="webPct">Web</span>
+            </div>
+            <div class="channel-bar">
+              <div class="channel-bar-app" style="width:50%;"></div>
+              <div class="channel-bar-web" style="width:50%;"></div>
+            </div>
+          </div>
+          <div class="channel-recommendation" id="channelRecommendation"></div>
+        </div>
+      </div>
+
+      <!-- MODÜL 5: ANOMALİ -->
+      <div class="card pipeline-card">
+        <div class="card-header">
+          <div class="card-icon red">🔍</div>
+          <div>
+            <div class="card-title">5. Anomali Tespiti</div>
+            <div class="card-subtitle">Isolation Forest · STATE değerlerinden beslenir</div>
+          </div>
+        </div>
+        <div class="pipeline-info-row">
+          <span class="pi-chip red">↑ energy</span>
+          <span class="pi-chip red">↑ sales</span>
+          <span class="pi-chip red">↑ workers</span>
+          <span class="pi-chip red">↑ production</span>
+          <span class="pi-arrow">→ anomali</span>
+        </div>
+        <button id="btnAnomaly" class="btn btn-primary" onclick="calculateAnomaly()">
+          <div class="spinner"></div>
+          <span class="btn-text">🔍 Anomali Tara</span>
+        </button>
+        <div id="resultAnomalyCard" style="display:none; margin-top:14px;">
+          <div id="anomalyBox" class="anomaly-box good">
+            <div id="anomalyIcon" class="anomaly-icon">✅</div>
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <div id="anomalyLabel" class="anomaly-label"></div>
+                <span id="anomalySeverityBadge"></span>
+              </div>
+              <div id="anomalyReason" class="anomaly-reason"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /input-grid -->
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- SENARYO ANALİZİ (What-If)                         -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="divider"></div>
+    <div class="section-title">③ Senaryo Analizi · What-If Simülasyonu</div>
+
+    <div class="scenario-wrapper">
+      <div class="card scenario-input-card">
+        <div class="card-header">
+          <div class="card-icon purple">🔬</div>
+          <div>
+            <div class="card-title">Değişken Simülasyonu</div>
+            <div class="card-subtitle">Mevcut değerlere % değişim uygula</div>
+          </div>
+        </div>
+        <div class="scenario-info">
+          Yukarıdaki parametreleri temel alarak enerji ve/veya çalışan sayısını belirli bir yüzde
+          değiştirin. Yeni üretim, satış ve kar anında hesaplanır.
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label>⚡ Enerji Değişimi (%)</label>
+            <input type="number" id="scenarioEnergyChange" class="form-control" placeholder="-10 veya +20" value="0">
+          </div>
+          <div class="form-group">
+            <label>👥 Çalışan Değişimi (%)</label>
+            <input type="number" id="scenarioWorkerChange" class="form-control" placeholder="-5 veya +15" value="0">
+          </div>
+        </div>
+        <button id="btnScenario" class="btn btn-primary" onclick="runScenario()">
+          <div class="spinner"></div>
+          <span class="btn-text">🔬 Senaryoyu Çalıştır</span>
+        </button>
+      </div>
+
+      <div id="scenarioResultCard" class="card scenario-result-card" style="display:none;">
+        <div class="card-header">
+          <div class="card-icon blue">📊</div>
+          <div>
+            <div class="card-title">Senaryo Sonuçları</div>
+            <div id="scenarioApplied" class="card-subtitle"></div>
+          </div>
+        </div>
+        <div class="scenario-metrics">
+          <div class="scenario-metric-col">
+            <div class="scenario-metric-label">Üretim</div>
+            <div id="scProduction" class="scenario-metric-val blue">—</div>
+            <div id="scProductionDelta" class="scenario-delta"></div>
+          </div>
+          <div class="scenario-divider-v"></div>
+          <div class="scenario-metric-col">
+            <div class="scenario-metric-label">Satış</div>
+            <div id="scSales" class="scenario-metric-val purple">—</div>
+            <div id="scSalesDelta" class="scenario-delta"></div>
+          </div>
+          <div class="scenario-divider-v"></div>
+          <div class="scenario-metric-col">
+            <div class="scenario-metric-label">Kar</div>
+            <div id="scProfit" class="scenario-metric-val green">—</div>
+            <div id="scProfitDelta" class="scenario-delta"></div>
+          </div>
+        </div>
+        <div id="scenarioCommentary" class="scenario-commentary"></div>
+      </div>
+    </div><!-- /scenario-wrapper -->
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ETKİ ANALİZİ (/api/impact)                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="section-title">③b Etki Analizi · Parametre Değişiminin Etkisi</div>
+
+    <div class="scenario-wrapper">
+      <div class="card scenario-input-card">
+        <div class="card-header">
+          <div class="card-icon blue">⚖️</div>
+          <div>
+            <div class="card-title">Etki Analizi</div>
+            <div class="card-subtitle">Eski vs Yeni değerler karşılaştırması</div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label>⚡ Enerji Değişimi (%)</label>
+            <input type="number" id="impactEnergyChange" class="form-control" placeholder="-10 veya +20" value="0">
+          </div>
+          <div class="form-group">
+            <label>👥 Çalışan Değişimi (%)</label>
+            <input type="number" id="impactWorkerChange" class="form-control" placeholder="-5 veya +15" value="0">
+          </div>
+        </div>
+        <button id="btnImpact" class="btn btn-primary" onclick="runImpactAnalysis()">
+          <div class="spinner"></div>
+          <span class="btn-text">⚖️ Etkiyi Analiz Et</span>
+        </button>
+      </div>
+
+      <!-- Impact Result Card — ID'ler script.js ile tam eşleşiyor -->
+      <div id="impactResultCard" class="card scenario-result-card" style="display:none;">
+        <div class="card-header">
+          <div class="card-icon blue">📊</div>
+          <div>
+            <div class="card-title">Etki Analizi Sonuçları</div>
+            <div id="impactApplied" class="card-subtitle"></div>
+          </div>
+        </div>
+        <div id="impactSummary" style="padding:12px 0; font-size:14px; color:var(--text-secondary);"></div>
+        <div style="overflow-x:auto; margin-top:8px;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left; padding:6px 8px; color:var(--text-muted);">Metrik</th>
+                <th style="text-align:right; padding:6px 8px; color:var(--text-muted);">Mevcut</th>
+                <th style="text-align:right; padding:6px 8px; color:var(--text-muted);">Yeni</th>
+                <th style="text-align:right; padding:6px 8px; color:var(--text-muted);">Delta</th>
+              </tr>
+            </thead>
+            <tbody id="impactTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- AKILLI ÖNERİ (/api/recommendation)                -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="section-title">③c Karar Destek · Akıllı Öneri Sistemi</div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header">
+        <div class="card-icon green">💡</div>
+        <div>
+          <div class="card-title">ML Tabanlı Öneri</div>
+          <div class="card-subtitle">DecisionTree + IsolationForest kararları</div>
+        </div>
+      </div>
+      <button id="btnRecommendation" class="btn btn-primary" onclick="runSmartRecommendation()">
+        <div class="spinner"></div>
+        <span class="btn-text">💡 Öneri Al</span>
+      </button>
+    </div>
+
+    <!-- Recommendation Result Card — ID'ler script.js ile tam eşleşiyor -->
+    <div id="recommendationResultCard" class="card" style="display:none; margin-bottom:24px;">
+      <div class="card-header">
+        <div class="card-icon green">💡</div>
+        <div>
+          <div class="card-title">Öneri Sonuçları</div>
+          <div id="recStatusLabel" class="card-subtitle"></div>
+        </div>
+      </div>
+      <div id="recSummaryRow" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; padding:12px; background:var(--bg-input); border-radius:var(--radius);"></div>
+      <div id="recList" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- MERKEZI DASHBOARD                                  -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="section-title">④ Genel Dashboard · Tek API Çağrısı</div>
+
+    <div class="run-section">
+      <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
+        Tüm modülleri tek seferde çalıştırır. Üretim → Satış → Kar → Kanal → Anomali otomatik hesaplanır.
+      </p>
+      <button id="btnDashboard" class="btn btn-success btn-large" onclick="runDashboard()">
+        <div class="spinner"></div>
+        <span class="btn-text">🚀 Tüm Analizi Çalıştır</span>
+      </button>
+    </div>
+    <div id="dashboardEmpty" class="dashboard-empty">Henüz veri girilmedi</div>
+
+    <!-- Dashboard Sonuçları -->
+    <div id="dashboardResults" class="results-section">
+
+      <!-- Özet Metrikler -->
+      <div class="results-grid">
+        <div class="metric-card">
+          <div class="metric-label">Üretim</div>
+          <div id="dashProduction" class="metric-value blue">—</div>
+          <div class="metric-unit">birim</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Satış</div>
+          <div id="dashSales" class="metric-value purple">—</div>
+          <div class="metric-unit">adet</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Gelir</div>
+          <div id="dashRevenue" class="metric-value green">—</div>
+          <div class="metric-unit">toplam</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Net Kar</div>
+          <div id="dashProfit" class="metric-value green">—</div>
+          <div class="metric-unit">gelir − maliyet</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Anomali</div>
+          <div id="dashAnomaly" class="metric-value green">—</div>
+          <div id="dashAnomalySeverity" class="metric-unit"></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">İyi Kanal</div>
+          <div id="dashChannel" class="metric-value blue">—</div>
+          <div class="metric-unit">app / web</div>
+        </div>
+      </div>
+
+      <!-- KPI Kartları -->
+      <div class="section-title" style="margin-top:8px;">KPI · Performans Göstergeleri</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon">⚡</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Enerji Verimliliği</div>
+            <div id="kpiEfficiency" class="kpi-value">—</div>
+            <div class="kpi-unit">birim / kWh</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">💹</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Kar Oranı</div>
+            <div id="kpiProfitRate" class="kpi-value">—</div>
+            <div class="kpi-unit">% gelirin karı</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🏷</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Maliyet Oranı</div>
+            <div id="kpiCostRate" class="kpi-value">—</div>
+            <div class="kpi-unit">% gelirin maliyeti</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Yorum -->
+      <div id="commentaryBox" class="commentary-box good" style="display:none;">
+        <div class="commentary-icon">🤖</div>
+        <div>
+          <div class="commentary-title">AI Yorumu</div>
+          <div id="commentaryText" class="commentary-text"></div>
+        </div>
+      </div>
+
+      <!-- Performans Skoru -->
+      <div id="perfScoreSection" style="display:none; margin-bottom:24px;">
+        <div class="section-title" style="margin-bottom:16px;">Performans Skoru</div>
+        <div class="perf-score-card">
+          <div class="perf-score-circle-wrap">
+            <svg class="perf-arc" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" stroke-width="10"/>
+              <circle id="perfArcFill" cx="60" cy="60" r="50" fill="none"
+                      stroke="var(--green)" stroke-width="10"
+                      stroke-linecap="round" stroke-dasharray="0 314"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="perf-score-inner">
+              <div id="perfScoreNumber" class="perf-score-number">—</div>
+              <div class="perf-score-label">/ 100</div>
+            </div>
+          </div>
+          <div class="perf-score-info">
+            <div id="perfScoreClass" class="perf-score-class">—</div>
+            <div class="perf-score-formula">Formül: (Kar Oranı×0.5 + Verimlilik×0.3 + Maliyet×0.2)</div>
+            <div class="perf-score-bands">
+              <span class="band red">0–40 Kötü</span>
+              <span class="band yellow">40–70 Orta</span>
+              <span class="band green">70–100 İyi</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Akıllı Öneri -->
+      <div id="recommendationBox" class="recommendation-box" style="display:none;">
+        <div class="rec-icon">💡</div>
+        <div>
+          <div class="rec-title">Akıllı Öneri</div>
+          <div id="recommendationText" class="rec-text"></div>
+        </div>
+      </div>
+
+      <!-- Grafikler — chartFinancial + chartVolume (script.js ile eşleşiyor) -->
+      <div class="chart-card">
+        <div class="card-header" style="border:none; padding-bottom:0; margin-bottom:16px;">
+          <div class="card-icon blue">📈</div>
+          <div>
+            <div class="card-title">Finansal Metrikler</div>
+            <div class="card-subtitle">Gelir · Maliyet · Kar</div>
+          </div>
+        </div>
+        <canvas id="chartFinancial"></canvas>
+      </div>
+
+      <div class="chart-card" style="margin-top:16px;">
+        <div class="card-header" style="border:none; padding-bottom:0; margin-bottom:16px;">
+          <div class="card-icon purple">📦</div>
+          <div>
+            <div class="card-title">Hacim Metrikleri</div>
+            <div class="card-subtitle">Üretim · Satış</div>
+          </div>
+        </div>
+        <canvas id="chartVolume"></canvas>
+      </div>
+
+    </div><!-- /dashboardResults -->
+
+    <!-- PDF Export -->
+    <div id="pdfExportSection" style="display:none; text-align:center; margin: 8px 0 40px;">
+      <button class="btn btn-pdf" onclick="downloadPDF()">
+        📄 PDF Rapor İndir
+      </button>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+        Son analiz sonuçları A4 formatında indirilir.
+      </p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Geçmiş Analizler -->
+    <div class="section-title">⑤ Geçmiş Analizler</div>
+
+    <div class="history-panel">
+      <div class="history-header">
+        <div class="history-header-left">
+          <span class="history-panel-icon">🗂</span>
+          <div>
+            <div style="font-size:14px; font-weight:700;">Geçmiş Analizler</div>
+            <div style="font-size:11px; color:var(--text-muted);">Son 5 dashboard çalıştırması · Tarayıcıda saklanır</div>
+          </div>
+        </div>
+        <button class="btn-clear-history" onclick="clearHistory()" title="Geçmişi temizle">
+          🗑 Temizle
+        </button>
+      </div>
+      <div id="historyEmpty" class="history-empty">
+        <div style="font-size:32px; margin-bottom:8px; opacity:0.3;">📂</div>
+        <div>Henüz veri girilmedi</div>
+        <div style="font-size:12px; margin-top:4px; color:var(--text-muted);">Dashboard'u çalıştırınca kayıtlar burada görünür.</div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
